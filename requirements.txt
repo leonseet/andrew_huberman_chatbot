@@ -1,0 +1,12 @@
+llama-index
+llama-hub
+langchain
+openai
+python-dotenv
+chromadb
+beautifulsoup4
+lxml
+tqdm
+youtube_transcript_api
+numpy
+# google-generativeai
