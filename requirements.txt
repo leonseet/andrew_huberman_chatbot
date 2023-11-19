@@ -9,4 +9,10 @@ lxml
 tqdm
 youtube_transcript_api
 numpy
+transformers
+sentencepiece
+huggingface-hub
+plotly
+nbformat
+python-dateutil
 # google-generativeai
