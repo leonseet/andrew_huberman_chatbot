@@ -15,4 +15,6 @@ huggingface-hub
 plotly
 nbformat
 python-dateutil
+chromadb
+torch
 # google-generativeai
