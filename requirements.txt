@@ -17,4 +17,7 @@ nbformat
 python-dateutil
 chromadb
 torch
+spacy
+
+# vllm
 # google-generativeai

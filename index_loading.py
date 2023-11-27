@@ -1,10 +1,18 @@
 import json
 from tqdm import tqdm
 from transformers import LlamaTokenizerFast
-from libs.index import initialize_chroma
+from libs.index import initialize_chroma_vector_store, CustomQuestionExtractor
 from dotenv import load_dotenv
 from libs import configs
+from libs.query import get_llm
 
+from llama_index.extractors import (
+    SummaryExtractor,
+    QuestionsAnsweredExtractor,
+    TitleExtractor,
+    KeywordExtractor,
+    EntityExtractor,
+)
 from llama_index.embeddings import HuggingFaceEmbedding
 from llama_index.node_parser import TokenTextSplitter
 from llama_index import (
@@ -14,23 +22,27 @@ from llama_index.ingestion import IngestionPipeline
 
 load_dotenv()
 
-INPUT_FILE_PATH = "data/andrew_huberman_episodes_processed.json"
+INPUT_FILE_PATH = "data/andrew_huberman_episodes_processed_small.json"
 
 # Load the data
 with open(INPUT_FILE_PATH, "r") as file:
     data = json.load(file)
 
-# Initialize the tokenizer and splitter
-tokenizer = LlamaTokenizerFast.from_pretrained("meta-llama/Llama-2-7b-chat-hf")
-token_splitter = TokenTextSplitter(
-    chunk_size=512, chunk_overlap=20, separator=" ", tokenizer=tokenizer
-)
+# Initialize splitter
 embed_model = HuggingFaceEmbedding(model_name=configs.EMB_MODEL)
+llm = get_llm("gpt-3.5-turbo")
+text_splitter = TokenTextSplitter(
+    chunk_size=512,
+    chunk_overlap=20,
+    separator=" ",
+)
 
 # Initialize the Chroma DB
-vector_store = initialize_chroma()
+vector_store = initialize_chroma_vector_store()
 
-for d in tqdm(data, total=len(data)):
+docs = []
+
+for d in tqdm(data, total=len(data), desc="Processing into list of Document"):
     transcripts = d["transcripts"]
     if not transcripts:
         continue
@@ -63,20 +75,22 @@ for d in tqdm(data, total=len(data)):
                 "timestamp_sentencepiece_token_length",
             ],
             excluded_llm_metadata_keys=[
+                "episode_description",
                 "timestamp_start",
                 "timestamp_end",
                 "timestamp_sentencepiece_token_length",
             ],
         )
 
-        if t["sentencepiece_token_length"] > 512:
-            pipeline = IngestionPipeline(
-                transformations=[token_splitter],
-                vector_store=vector_store,
-            )
-            pipeline.run(documents=[doc])
-        else:
-            pipeline = IngestionPipeline(
-                vector_store=vector_store,
-            )
-            pipeline.run(documents=[doc])
+        docs.append(doc)
+
+pipeline = IngestionPipeline(
+    transformations=[
+        text_splitter,
+        QuestionsAnsweredExtractor(questions=3, llm=llm),
+        # CustomQuestionExtractor(),
+        embed_model,
+    ],
+    vector_store=vector_store,
+)
+nodes = pipeline.run(documents=docs, show_progress=True)
