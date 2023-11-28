@@ -18,6 +18,7 @@ from llama_index.embeddings import HuggingFaceEmbedding
 
 load_dotenv()
 
+QUESTION = "How does the hormone ghrelin affect hunger and appetite regulation?"
 
 # llm = Anyscale(
 #     model="meta-llama/Llama-2-70b-chat-hf",
@@ -53,23 +54,22 @@ retriever = VectorIndexRetriever(
     verbose=False,
 )
 
-# assemble query engine
-query_engine = RetrieverQueryEngine(
-    retriever=retriever,
-    response_synthesizer=response_synthesizer,
-    # node_postprocessors=[SimilarityPostprocessor(similarity_cutoff=0.7)],
-)
-
+# retrieve
+nodes = retriever.retrieve(QUESTION)
+for node in nodes:
+    node.node.excluded_llm_metadata_keys = [
+        "episode_description",
+        "timestamp_start",
+        "timestamp_end",
+        "timestamp_sentencepiece_token_length",
+    ]
 
 # query
-# response = query_engine.query("What can cause rise in blood glucose?")
-response = query_engine.query(
-    "How does the hormone ghrelin affect hunger and appetite regulation?"
-)
+response = response_synthesizer.synthesize(query=QUESTION, nodes=nodes)
 
 for node in response.source_nodes:
     print(node.node_id)
-    print(node.metadata)
+    # print(node.metadata)
     print(node.get_content(metadata_mode=MetadataMode.LLM))
     print(node.score)
     print("-" * 20)
