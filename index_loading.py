@@ -5,6 +5,7 @@ from libs.index import initialize_chroma_vector_store, CustomQuestionExtractor
 from dotenv import load_dotenv
 from libs import configs
 from libs.query import get_llm
+import uuid
 
 from llama_index.extractors import (
     SummaryExtractor,

@@ -3,13 +3,14 @@ from tqdm import tqdm
 import re
 import json
 
-OUTPUT_FILE_PATH = "data/eval_qns.json"
+OUTPUT_FILE_PATH = "data/eval_qns_small.json"
 
 chroma_collection = initialize_chroma_collection()
 docs = chroma_collection.get(limit=9999, include=["metadatas", "documents"])
 
 metadatas = docs["metadatas"]
 documents = docs["documents"]
+ids = docs["ids"]
 
 eval_qns = []
 
@@ -17,7 +18,7 @@ for i in tqdm(range(len(metadatas)), total=len(metadatas)):
     metadata = metadatas[i]
     doc = documents[i]
 
-    doc_id = metadata["doc_id"]
+    doc_id = ids[i]
     questions = metadata["questions_this_excerpt_can_answer"]
     questions = questions.split("\n")
     first_qns = questions[0]
